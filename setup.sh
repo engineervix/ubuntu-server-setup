@@ -209,10 +209,10 @@ function setupNodeYarn() {
 
 function setupGit() {
   # Configure git
-  git config --global color.ui true
+  execAsUser "${username}" "git config --global color.ui true"
 
-  git config --global user.name "${git_name}"
-  git config --global user.email "${git_email}"
+  execAsUser "${username}" "git config --global user.name \"${git_name}\""
+  execAsUser "${username}" "git config --global user.email \"${git_email}\""
 }
 
 function setupZSH() {

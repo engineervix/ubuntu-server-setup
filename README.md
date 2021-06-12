@@ -180,7 +180,7 @@ Tests are run against a set of Vagrant VMs. To run the tests, run the following 
 - [X] setup nginx
 - [X] setup uWSGI
 - [X] Fix broken tests
-- [ ] Check the git config, I think it doesn't work because the command needs to be run as the new user
+- [x] Check the git config, I think it doesn't work because the command needs to be run as the new user
 - [ ] setup [pyenv](https://github.com/pyenv/pyenv-installer)
 - [ ] minimize / eliminate user input for some operations like _Unattended upgrades_, _Postgres setup_, etc.
 - [ ] Further server hardening to quench any lurking paranoia 🕵🏿‍♀️💣🧨
