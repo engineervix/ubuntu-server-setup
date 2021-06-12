@@ -1,0 +1,25 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "muse-sisay",
+      "name": "black_sage",
+      "avatar_url": "https://avatars.githubusercontent.com/u/48902323?v=4",
+      "profile": "https://www.geberewcoders.com",
+      "contributions": [
+        "code",
+        "bug"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "ubuntu-server-setup",
+  "projectOwner": "engineervix",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}
