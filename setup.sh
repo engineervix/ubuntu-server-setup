@@ -571,4 +571,5 @@ function installExtraPackages() {
 
 # --------- end addtitional features not in original script --------- #
 
+systemUpdate
 main

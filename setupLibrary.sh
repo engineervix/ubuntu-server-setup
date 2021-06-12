@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Update system update packages 
+function systemUpdate(){
+    sudo apt-get update && apt-get upgrade -y
+}
+
 # Add the new user account
 # Arguments:
 #   Account Username
