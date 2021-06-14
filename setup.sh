@@ -17,12 +17,120 @@ current_dir=$(getCurrentDir)
 includeDependencies
 output_file="output.log"
 
-function main() {
-  read -rp "Enter the username of the new user account:" username
+essential_packages="ZSH ZSH off  \
+    Vim description off \
+    Ruby description off \
+    PythonDev description off \
+    DB description off \
+    WebServer description off \
+    Mail description off"
 
-  echo "Please specify your Git Global Name & Email" 
-  read -rp 'Your (git) Name: ' git_name 
-  read -rp 'Your (git) Email Address: ' git_email 
+  additional_packages="ffmpeg description off \
+    youtube-dl description off \
+    inkscape description off \
+    autoconf description off \
+    automake description off \
+    autotools-dev description off \
+    spngquant description off \
+    ocrmypdf description off \
+    xvfb description off \
+    rdiff-backup description off \
+    rclone description off \
+    apt-clone description off \
+    firefox description off \
+    pandoc description off \
+    sqlite3 description off \
+    poppler-utils description off \
+    ncdu description off \
+    libtool description off \
+    scour description off "
+
+  # Define the dialog exit status codes
+  DIALOG_CANCEL=1
+  DIALOG_ESC=255
+  HEIGHT=0
+  WIDTH=0
+
+function main() {
+  
+  # Have an introduction here
+  dialog --clear \
+        --ok-label "Setup" \
+        --title  "Ubuntu Server Setup" \
+        --msgbox "This is an opinionated setup script to\
+        automate the setup and provisioning of Ubuntu\
+          servers, primarily biased towards python web applications" 10 60
+
+
+  # USER INFO
+  user_info=$(dialog --title " New User Information " \
+    --clear \
+    --ok-label "Next" \
+    --output-separator : \
+    --stdout \
+    --form "New User" \
+    15 70  0 \
+    "Full Name:"   1 1 "" 1 16 25 0 \
+    "Room Number:" 2 1 "" 2 16 25 0 \
+    "Work Phone:"  3 1 "" 3 16 25 0 \
+    "Home Phone:"  4 1 "" 4 16 25 0 \
+    "Comment:"     5 1 "" 5 16 25 0 )
+
+  exit_status=$?
+  if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+    exit 1
+  fi
+
+  # Git Info
+  git_info=$(dialog --title "New User Information " \
+    --clear \
+    --ok-label "Next" \
+    --output-separator : \
+    --stdout \
+    --form "This will configure your local GIT account" \
+    7 70  0 \
+    "Git Name:"   1 1 "" 1 16 25 0 \
+    "Git Email:"  2 1 "" 2 16 25 0 )
+
+  exit_status=$?
+  if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+    exit 1
+  fi
+
+  # Install and configure essential packages
+  service_install=$( dialog  --title "Services to Install" \
+    --stdout \
+    --ok-label "Next" \
+    --output-separator : \
+    --checklist "Select the servies to instal:" 20 0 15 \
+    $essential_packages ) 
+
+  exit_status=$?
+  if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+    exit 1
+  fi
+
+  # Install aditional packages
+  additional_services=$(dialog  --title "Services to Install" \
+    --stdout \
+    --ok-label "Next" \
+    --output-separator : \
+    --checklist "Additional Services:" 20 0 15 \
+    $additional_packages )
+
+  exit_status=$?
+  if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+    exit 1
+  fi
+
+  # Services to install
+  full_name=$( echo $user_info | cut -f 1 -d : )
+  room_number=$( echo $user_info | cut -f 2 -d : )
+  work_phone=$( echo $user_info | cut -f 3 -d : )
+  home_phone=$( echo $user_info | cut -f 4 -d : )
+  cmnt=$( echo $user_info | cut -f 5 -d : )
+  git_name=$( echo $git_info | cut -f 1 -d : )
+  git_email=$( echo $git_info | cut -f 2 -d : )
 
   promptForPassword
 
