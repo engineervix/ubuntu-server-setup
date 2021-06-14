@@ -27,6 +27,12 @@ essential_packages="ZSH ZSH off  \
 
   additional_packages="ffmpeg description off \
     youtube-dl description off \
+    wkhtmltopdf description off \
+    openjdk-8-jdk description off \
+    pdftk description off \
+    libreoffice-common description off \
+    aspell description off \
+    hunspell description off \
     inkscape description off \
     autoconf description off \
     automake description off \
@@ -37,13 +43,14 @@ essential_packages="ZSH ZSH off  \
     rdiff-backup description off \
     rclone description off \
     apt-clone description off \
-    firefox description off \
+    firefox description on \
     pandoc description off \
     sqlite3 description off \
     poppler-utils description off \
     ncdu description off \
     libtool description off \
-    scour description off "
+    scour description off \
+    texlive-full description off "
 
   # Define the dialog exit status codes
   DIALOG_CANCEL=1
@@ -167,17 +174,42 @@ function main() {
   sudo -i -u "${username}" -H bash -c "mkdir -p /home/${username}/bin"
 
   setupGit
-  setupZSH
-  setupRuby
-  setupPythonDev
-  setupVim
-  setupDatabases
-  setupWebServer
-  setupMail
+  
+  while read package 
+  do
+    case $package in 
+      ZSH)
+        setupZSH
+        ;;
+      Vim)
+        setupVim
+        ;;
+      Ruby)
+        setupRuby
+        ;;
+      PythonDev)
+        setupPythonDev
+        ;;
+      DB)
+        setupDatabases
+        ;;
+      WebServer)
+        setupWebServer
+        ;;
+      Mail)
+        setupMail
+        ;;
+      *) 
+        echo Invalid input
+        ;;
+    esac
+  done < <(echo $service_install | tr ':' '\n' )
+
   configureSystemUpdatesAndLogs
   furtherHardening
   miscellaneousTasks
-  installExtraPackages
+  # installExtraPackages
+  sudo apt install -y $(echo $additional_services | sed 's/:/ /g')
 
   # fix for (warning: unable to access '$HOME/.config/git/attributes': Permission denied)
   sudo -i -u "${username}" -H bash -c "mkdir -p /home/${username}/.config"
