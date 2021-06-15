@@ -107,6 +107,7 @@ function main() {
 
   # Prompt password for NEW user
   promptForPassword
+  promptForSSHKey
 
   # Install and configure essential packages
   service_install=$( dialog  --title "Services to Install" \
@@ -150,7 +151,7 @@ function main() {
 
   addUserAccount "${username}" "${password}"
 
-  read -rp $'Paste in the public SSH key for the new user:\nHint: cat ~/.ssh/id_rsa.pub\n' sshKey
+  clear 
   echo 'Running setup script...'
   logTimestamp "${output_file}"
 
@@ -302,6 +303,20 @@ function promptForPassword() {
 }
 
 # ----------- addtitional functions not in original script ----------- #
+
+function promptForSSHKey{
+
+  dialog --clear \
+  --title  "SSH key" \
+  --msgbox "In the next dialog you will be promoted to enter yor public ssh key" 5 50
+
+
+  tmp_sshkey=$(tempfile 2>/dev/null)
+  trap "rm -f $tmp_sshkey" 0 1 2 5 15
+  sshKey=$(dialog --clear  --stdout \
+          --title "Paste your Public SSH Key" 
+          --editbox $tmp_sshkey 16 50)
+}
 
 function extraHardening() {
   # restrict access to the server
