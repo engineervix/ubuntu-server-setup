@@ -52,11 +52,10 @@ essential_packages="ZSH ZSH off  \
     scour description off \
     texlive-full description off "
 
-  # Define the dialog exit status codes
-  DIALOG_CANCEL=1
-  DIALOG_ESC=255
-  HEIGHT=0
-  WIDTH=0
+# Define the dialog exit status codes
+DIALOG_CANCEL=1
+DIALOG_ESC=255
+
 
 function main() {
   
@@ -173,6 +172,9 @@ function main() {
   # echo "Installing Network Time Protocol... " 
   configureNTP
 
+  # Do a system update before installing packages
+  systemUpdate
+
   # setupHostname
   setupNodeYarn
 
@@ -286,17 +288,28 @@ function promptForPassword() {
       --insecure \
       --passwordbox "Enter new UNIX password" 10 30 2> $password
 
+    exit_status=$?
+    if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+      exit 1
+    fi
+
     # Password Confirmation
     dialog --title "Password" \
       --clear \
       --ok-label "Next" \
       --insecure \
       --passwordbox "Retype new UNIX password" 10 30 2> $password_confirmation
+
+    exit_status=$?
+    if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+      exit 1
+    fi
       
-    if [[ "${password}" != "${password_confirmation}" ]]; then
+    if [[ $(cat $password) != $(cat $password_confirmation) ]]; then
       dialog --title  "Password"  --msgbox "Passwords do not match! Please try again." 5 50
     else
       PASSWORDS_MATCH=1
+      password=$(cat $password)
     fi
 
   done 
@@ -304,7 +317,7 @@ function promptForPassword() {
 
 # ----------- addtitional functions not in original script ----------- #
 
-function promptForSSHKey{
+function promptForSSHKey () {
 
   dialog --clear \
   --title  "SSH key" \
@@ -314,7 +327,7 @@ function promptForSSHKey{
   tmp_sshkey=$(tempfile 2>/dev/null)
   trap "rm -f $tmp_sshkey" 0 1 2 5 15
   sshKey=$(dialog --clear  --stdout \
-          --title "Paste your Public SSH Key" 
+          --title "Paste your Public SSH Key" \
           --editbox $tmp_sshkey 16 50)
 }
 
@@ -746,5 +759,4 @@ function installExtraPackages() {
 
 # --------- end addtitional features not in original script --------- #
 
-systemUpdate
 main
