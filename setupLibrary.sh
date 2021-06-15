@@ -13,14 +13,9 @@ function systemUpdate(){
 function addUserAccount() {
     local username=${1}
     local password=${2}
-    local silent_mode=${3}
 
-    if [[ ${silent_mode} == "true" ]]; then
-        sudo adduser --disabled-password --gecos '' "${username}"
-    else
-        sudo adduser --disabled-password "${username}"
-    fi
-
+    sudo useradd -m --comment  "${full_name}, ${room_number}, ${work_phone},  ${home_phone} ${other}" "${username}"
+    
     echo "${username}:${password}" | sudo chpasswd
     sudo usermod -aG sudo "${username}"
 }

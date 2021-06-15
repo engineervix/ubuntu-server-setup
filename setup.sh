@@ -17,21 +17,140 @@ current_dir=$(getCurrentDir)
 includeDependencies
 output_file="output.log"
 
+essential_packages="ZSH ZSH off  \
+    Vim description off \
+    Ruby description off \
+    PythonDev description off \
+    DB description off \
+    WebServer description off \
+    Mail description off"
+
+  additional_packages="ffmpeg description off \
+    youtube-dl description off \
+    wkhtmltopdf description off \
+    openjdk-8-jdk description off \
+    pdftk description off \
+    libreoffice-common description off \
+    aspell description off \
+    hunspell description off \
+    inkscape description off \
+    autoconf description off \
+    automake description off \
+    autotools-dev description off \
+    spngquant description off \
+    ocrmypdf description off \
+    xvfb description off \
+    rdiff-backup description off \
+    rclone description off \
+    apt-clone description off \
+    firefox description on \
+    pandoc description off \
+    sqlite3 description off \
+    poppler-utils description off \
+    ncdu description off \
+    libtool description off \
+    scour description off \
+    texlive-full description off "
+
+# Define the dialog exit status codes
+DIALOG_CANCEL=1
+DIALOG_ESC=255
+
+
 function main() {
-  read -rp "Enter the username of the new user account:" username
+  
+  # Have an introduction here
+  dialog --clear \
+        --ok-label "Setup" \
+        --title  "Ubuntu Server Setup" \
+        --msgbox "This is an opinionated setup script to\
+        automate the setup and provisioning of Ubuntu\
+          servers, primarily biased towards python web applications" 10 60
 
-  echo "Please specify your Git Global Name & Email" 
-  read -rp 'Your (git) Name: ' git_name 
-  read -rp 'Your (git) Email Address: ' git_email 
 
+  # USER INFO
+  user_info=$(dialog --title " New User Information " \
+    --clear \
+    --ok-label "Next" \
+    --output-separator : \
+    --stdout \
+    --form "New User" \
+    15 70  0 \
+    "Full Name:"   1 1 "" 1 16 25 0 \
+    "Username":    2 1 "" 1 16 25 0 \
+    "Room Number:" 3 1 "" 2 16 25 0 \
+    "Work Phone:"  4 1 "" 3 16 25 0 \
+    "Home Phone:"  5 1 "" 4 16 25 0 \
+    "Comment:"     6 1 "" 5 16 25 0 )
+
+  exit_status=$?
+  if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+    exit 1
+  fi
+
+  # Git Info
+  git_info=$(dialog --title "New User Information " \
+    --clear \
+    --ok-label "Next" \
+    --output-separator : \
+    --stdout \
+    --form "This will configure your local GIT account" \
+    7 70  0 \
+    "Git Name:"   1 1 "" 1 16 25 0 \
+    "Git Email:"  2 1 "" 2 16 25 0 )
+
+  exit_status=$?
+  if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+    exit 1
+  fi
+
+  # Prompt password for NEW user
   promptForPassword
+  promptForSSHKey
 
+  # Install and configure essential packages
+  service_install=$( dialog  --title "Services to Install" \
+    --stdout \
+    --ok-label "Next" \
+    --output-separator : \
+    --checklist "Select the servies to instal:" 20 0 15 \
+    $essential_packages ) 
+
+  exit_status=$?
+  if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+    exit 1
+  fi
+
+  # Install aditional packages
+  additional_services=$(dialog  --title "Services to Install" \
+    --stdout \
+    --ok-label "Next" \
+    --output-separator : \
+    --checklist "Additional Services:" 20 0 15 \
+    $additional_packages )
+
+  exit_status=$?
+  if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+    exit 1
+  fi
+
+  # Services to install
+  full_name=$( echo $user_info | cut -f 1 -d : )
+  username=$( echo $user_info | cut -f 2 -d : )
+  room_number=$( echo $user_info | cut -f 3 -d : )
+  work_phone=$( echo $user_info | cut -f 4 -d : )
+  home_phone=$( echo $user_info | cut -f 5 -d : )
+  other=$( echo $user_info | cut -f 6 -d : )
+  git_name=$( echo $git_info | cut -f 1 -d : )
+  git_email=$( echo $git_info | cut -f 2 -d : )
+
+  
   # Run setup functions
   trap cleanup EXIT SIGHUP SIGINT SIGTERM
 
   addUserAccount "${username}" "${password}"
 
-  read -rp $'Paste in the public SSH key for the new user:\nHint: cat ~/.ssh/id_rsa.pub\n' sshKey
+  clear 
   echo 'Running setup script...'
   logTimestamp "${output_file}"
 
@@ -53,23 +172,51 @@ function main() {
   # echo "Installing Network Time Protocol... " 
   configureNTP
 
+  # Do a system update before installing packages
+  systemUpdate
+
   # setupHostname
   setupNodeYarn
 
   sudo -i -u "${username}" -H bash -c "mkdir -p /home/${username}/bin"
 
   setupGit
-  setupZSH
-  setupRuby
-  setupPythonDev
-  setupVim
-  setupDatabases
-  setupWebServer
-  setupMail
+  
+  while read package 
+  do
+    case $package in 
+      ZSH)
+        setupZSH
+        ;;
+      Vim)
+        setupVim
+        ;;
+      Ruby)
+        setupRuby
+        ;;
+      PythonDev)
+        setupPythonDev
+        ;;
+      DB)
+        setupDatabases
+        ;;
+      WebServer)
+        setupWebServer
+        ;;
+      Mail)
+        setupMail
+        ;;
+      *) 
+        echo Invalid input
+        ;;
+    esac
+  done < <(echo $service_install | tr ':' '\n' )
+
   configureSystemUpdatesAndLogs
   furtherHardening
   miscellaneousTasks
-  installExtraPackages
+  # installExtraPackages
+  sudo apt install -y $(echo $additional_services | sed 's/:/ /g')
 
   # fix for (warning: unable to access '$HOME/.config/git/attributes': Permission denied)
   sudo -i -u "${username}" -H bash -c "mkdir -p /home/${username}/.config"
@@ -126,22 +273,63 @@ function cleanup() {
 
 # Keep prompting for the password and password confirmation
 function promptForPassword() {
-  PASSWORDS_MATCH=0
-  while [ "${PASSWORDS_MATCH}" -eq "0" ]; do
-    read -s -rp "Enter new UNIX password:" password
-    printf "\n"
-    read -s -rp "Retype new UNIX password:" password_confirmation
-    printf "\n"
 
-    if [[ "${password}" != "${password_confirmation}" ]]; then
-      echo "Passwords do not match! Please try again."
+  PASSWORDS_MATCH=0
+  password=$(tempfile 2>/dev/null)
+  password_confirmation=$(tempfile 2>/dev/null)
+  trap "rm -f $password" 0 1 2 5 15 # I don't understand what this line does
+  trap "rm -f $password_confirmation" 0 1 2 5 15 # TODO read what it does
+
+  while [ "${PASSWORDS_MATCH}" -eq "0" ]; do
+
+    dialog --title "Password" \
+      --clear \
+      --ok-label "Next" \
+      --insecure \
+      --passwordbox "Enter new UNIX password" 10 30 2> $password
+
+    exit_status=$?
+    if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+      exit 1
+    fi
+
+    # Password Confirmation
+    dialog --title "Password" \
+      --clear \
+      --ok-label "Next" \
+      --insecure \
+      --passwordbox "Retype new UNIX password" 10 30 2> $password_confirmation
+
+    exit_status=$?
+    if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
+      exit 1
+    fi
+      
+    if [[ $(cat $password) != $(cat $password_confirmation) ]]; then
+      dialog --title  "Password"  --msgbox "Passwords do not match! Please try again." 5 50
     else
       PASSWORDS_MATCH=1
+      password=$(cat $password)
     fi
+
   done 
 }
 
 # ----------- addtitional functions not in original script ----------- #
+
+function promptForSSHKey () {
+
+  dialog --clear \
+  --title  "SSH key" \
+  --msgbox "In the next dialog you will be promoted to enter yor public ssh key" 5 50
+
+
+  tmp_sshkey=$(tempfile 2>/dev/null)
+  trap "rm -f $tmp_sshkey" 0 1 2 5 15
+  sshKey=$(dialog --clear  --stdout \
+          --title "Paste your Public SSH Key" \
+          --editbox $tmp_sshkey 16 50)
+}
 
 function extraHardening() {
   # restrict access to the server
@@ -571,5 +759,4 @@ function installExtraPackages() {
 
 # --------- end addtitional features not in original script --------- #
 
-systemUpdate
 main
