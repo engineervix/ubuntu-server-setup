@@ -78,10 +78,11 @@ function main() {
     --form "New User" \
     15 70  0 \
     "Full Name:"   1 1 "" 1 16 25 0 \
-    "Room Number:" 2 1 "" 2 16 25 0 \
-    "Work Phone:"  3 1 "" 3 16 25 0 \
-    "Home Phone:"  4 1 "" 4 16 25 0 \
-    "Comment:"     5 1 "" 5 16 25 0 )
+    "Username":    2 1 "" 1 16 25 0 \
+    "Room Number:" 3 1 "" 2 16 25 0 \
+    "Work Phone:"  4 1 "" 3 16 25 0 \
+    "Home Phone:"  5 1 "" 4 16 25 0 \
+    "Comment:"     6 1 "" 5 16 25 0 )
 
   exit_status=$?
   if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
@@ -103,6 +104,9 @@ function main() {
   if  [[ $DIALOG_CANCEL -eq $exit_status ]] ; then
     exit 1
   fi
+
+  # Prompt password for NEW user
+  promptForPassword
 
   # Install and configure essential packages
   service_install=$( dialog  --title "Services to Install" \
@@ -132,15 +136,15 @@ function main() {
 
   # Services to install
   full_name=$( echo $user_info | cut -f 1 -d : )
-  room_number=$( echo $user_info | cut -f 2 -d : )
-  work_phone=$( echo $user_info | cut -f 3 -d : )
-  home_phone=$( echo $user_info | cut -f 4 -d : )
-  cmnt=$( echo $user_info | cut -f 5 -d : )
+  username=$( echo $user_info | cut -f 2 -d : )
+  room_number=$( echo $user_info | cut -f 3 -d : )
+  work_phone=$( echo $user_info | cut -f 4 -d : )
+  home_phone=$( echo $user_info | cut -f 5 -d : )
+  other=$( echo $user_info | cut -f 6 -d : )
   git_name=$( echo $git_info | cut -f 1 -d : )
   git_email=$( echo $git_info | cut -f 2 -d : )
 
-  promptForPassword
-
+  
   # Run setup functions
   trap cleanup EXIT SIGHUP SIGINT SIGTERM
 
@@ -266,18 +270,34 @@ function cleanup() {
 
 # Keep prompting for the password and password confirmation
 function promptForPassword() {
-  PASSWORDS_MATCH=0
-  while [ "${PASSWORDS_MATCH}" -eq "0" ]; do
-    read -s -rp "Enter new UNIX password:" password
-    printf "\n"
-    read -s -rp "Retype new UNIX password:" password_confirmation
-    printf "\n"
 
+  PASSWORDS_MATCH=0
+  password=$(tempfile 2>/dev/null)
+  password_confirmation=$(tempfile 2>/dev/null)
+  trap "rm -f $password" 0 1 2 5 15 # I don't understand what this line does
+  trap "rm -f $password_confirmation" 0 1 2 5 15 # TODO read what it does
+
+  while [ "${PASSWORDS_MATCH}" -eq "0" ]; do
+
+    dialog --title "Password" \
+      --clear \
+      --ok-label "Next" \
+      --insecure \
+      --passwordbox "Enter new UNIX password" 10 30 2> $password
+
+    # Password Confirmation
+    dialog --title "Password" \
+      --clear \
+      --ok-label "Next" \
+      --insecure \
+      --passwordbox "Retype new UNIX password" 10 30 2> $password_confirmation
+      
     if [[ "${password}" != "${password_confirmation}" ]]; then
-      echo "Passwords do not match! Please try again."
+      dialog --title  "Password"  --msgbox "Passwords do not match! Please try again." 5 50
     else
       PASSWORDS_MATCH=1
     fi
+
   done 
 }
 
